@@ -42,6 +42,7 @@ class RL:
         #       return np.random.choice(indxs)
         #   else:
         #       return np.random.randint(len(Q[state]))
+ 
         self.select_action = lambda state, Q, epsilon: \
             np.random.choice(np.arange(len(Q[state]))[np.isclose(Q[state], np.max(Q[state]))]) \
             if np.random.random() > epsilon \
@@ -158,6 +159,7 @@ class RL:
         if nA is None:
             nA=self.env.action_space.n
         pi_track = []
+        episode_rewards = []
         Q = np.zeros((nS, nA), dtype=np.float64)
         Q_track = np.zeros((n_episodes, nS, nA), dtype=np.float64)
         alphas = RL.decay_schedule(init_alpha,
@@ -174,11 +176,14 @@ class RL:
             state, info = self.env.reset()
             done = False
             state = convert_state_obs(state)
+            total_reward = 0
             while not done:
                 if self.render:
                     warnings.warn("Occasional render has been deprecated by openAI.  Use test_env.py to render.")
                 action = self.select_action(state, Q, epsilons[e])
                 next_state, reward, terminated, truncated, _ = self.env.step(action)
+                total_reward += reward
+                #print(total_reward)
                 if truncated:
                     warnings.warn("Episode was truncated.  TD target value may be incorrect.")
                 done = terminated or truncated
@@ -190,13 +195,14 @@ class RL:
                 state = next_state
             Q_track[e] = Q
             pi_track.append(np.argmax(Q, axis=1))
+            episode_rewards.append(total_reward)
             self.render = False
             self.callbacks.on_episode_end(self)
 
         V = np.max(Q, axis=1)
 
         pi = {s: a for s, a in enumerate(np.argmax(Q, axis=1))}
-        return Q, V, pi, Q_track, pi_track
+        return Q, V, pi, Q_track, pi_track, episode_rewards, epsilons
 
     def sarsa(self,
               nS=None,
