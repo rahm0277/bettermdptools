@@ -160,6 +160,7 @@ class RL:
             nA=self.env.action_space.n
         pi_track = []
         episode_rewards = []
+        
         Q = np.zeros((nS, nA), dtype=np.float64)
         Q_track = np.zeros((n_episodes, nS, nA), dtype=np.float64)
         alphas = RL.decay_schedule(init_alpha,
